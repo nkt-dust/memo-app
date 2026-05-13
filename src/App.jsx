@@ -6,6 +6,10 @@ import{supabase}from "./supabase";
 function App(){
   // 「memos=メモのデータの入る箱」「setMemos=メモが変更されると自動で画面を更新する」最初は空の配列（[]）
   const[memos,setMemos]=useState([]);
+  // 初期は空欄。タイトルの入る箱と、画面を更新する関数。
+  const[title,setTitle]=useState("");
+  // 初期は空欄。本文の入る箱と画面を更新する関数。
+  const[content,setContent]=useState("");
   // 「useEffect(()=>{
   // <ここに実行したいこと>
   // },[]);」でuseEffectは起動時に一回だけ｛｝内を実行する。最後の[]の書き方でuseEffectの動きが変わる。
@@ -38,10 +42,77 @@ function App(){
     // dataに値が入っていたら（成功）、setMemos関数を実行（データをmemosの箱に入れ、メモと画面を更新）
     setMemos(data);
   }
+  // メモを追加する関数。awaitが使える
+  async function addMemo(){
+    // もしも「title（タイトルの入力欄）」が空欄ならこれより先は実行しない。
+    if(title==="") return;
+    // 「supabase=データの倉庫と接続」awaitはinsertが終わるまで待つ。
+    // 今回は、insert(メモの追加)なので、error情報が入る受け皿(error)だけがあればいい。(supabaseはエラー情報を[error]という名前で返すため)
+    const{error}=await supabase
+    // supabaseのmemosという場所へ
+       .from('memos')
+    // 追加されたメモのタイトル(title)と本文(content)をsuopabaseのmemosテーブルへと追加
+       .insert({title: title,content: content });
+    // もしもsupabaseからエラー情報が返ってきていたら。
+    if(error){
+      // エラー情報をコンソールへ表示
+      console.log('エラー:',error);
+      // 以下に進まず返す
+      return;
+    }
+    // タイトルの入力欄を空にしてリセット
+    setTitle("");
+    // 本文の入力欄を空にしてリセット
+    setContent("");
+    // メモを追加したので、画面を更新して最新メモリストを表示
+    fetchMemos();
+  }
+  // メモの削除関数。メモのidを引数にもらう（該当のidのメモを削除する）
+  async function deleteMemo(id){
+    // supabeseと接続。削除関数なのでエラー情報（失敗）のみ受けとる箱をつくる
+    const{error}=await supabase
+      // supabaseのmemosという場所
+      .from('memos')
+      // 下記の条件に合うものを削除する
+      .delete()
+      // 引数のidと等しいid（列）のメモを対象にする「eq=等しい」
+      .eq('id',id);
+    // エラー情報がsupabaseから返ってきたらエラーとエラー情報をコンソールに表示して処理を止める
+    if(error){
+      console.log('エラー:',error);
+      return;
+    }
+    // 最新のメモリストに画面を更新
+    fetchMemos();
+  }
   // 以下の画面の設計図をReactに返す
   return(
     <div>
       <h1>メモアプリ</h1>
+      <div>
+        {/* タイトル入力欄 */}
+        <input 
+        // 「value=入力欄に表示される文字」→titleの箱の中身を入力欄の中身と同期する
+        value={title}
+        // 入力欄の中身が変わるたびonChangeがそれを自動で感知して、入力された情報（入力されたテキスト）をeへとまとめ（「e=イベント情報」）、
+        // 入力欄に今入っている文字「e.target.value（イベント情報の中の、target＜操作された情報＞の中のvalue<テキスト>）」を画面を更新(setTitle)する。
+        // e.target.valueの情報をsetTitleでtitleの中身を更新→titleとvalueを同期→valueが入力欄にテキストを表示
+        onChange={e=>setTitle(e.target.value)}
+        // 入力欄に最初に入っている薄い文字・ユーザーへのヒント
+        placeholder="タイトル"
+        />
+        {/* 複数行入力できる入力欄 */}
+        <textarea 
+          // content(本文)の箱の中のテキストを入力欄の中身と同期する。
+          value={content}
+          // 入力を自動感知して、入力情報をeへとまとめる。入力情報の中から、テキスト情報を取り出して、画面を更新して表示。
+          onChange={e=>setContent(e.target.value)}
+          // 入力欄に最初に入っている薄い文字・ユーザーへのヒント
+          placeholder="本文"
+          />
+          {/* 追加ボタン。クリックされるたび、addMemo関数が実行 */}
+          <button onClick={addMemo}>追加</button>
+      </div>
       {/* 順序なしリスト。<li>の親 */}
       <ul>
         {/* memos(オブジェクト)の中からひとつずつ取り出して加工していく。memoというラベルをつけていく */}
@@ -51,6 +122,8 @@ function App(){
             {/* 該当するデータのtitleとcontentを表示する */}
             <h3>{memo.title}</h3>
             <p>{memo.content}</p>
+            {/* 削除ボタンが押されると、クリックされたメモのidを引数に、deleteMemo関数が実行される。 */}
+            <button onClick={()=>deleteMemo(memo.id)}>削除</button>
           </li>
         ))}
       </ul>
