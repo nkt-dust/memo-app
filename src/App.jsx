@@ -10,6 +10,8 @@ function App(){
   const[title,setTitle]=useState("");
   // 初期は空欄。本文の入る箱と画面を更新する関数。
   const[content,setContent]=useState("");
+  // 編集中のメモのidを記憶する。そのidを更新する。初期は編集していないのでnull（idなし）
+  const [editingId,setEditingId]=useState(null);
   // 「useEffect(()=>{
   // <ここに実行したいこと>
   // },[]);」でuseEffectは起動時に一回だけ｛｝内を実行する。最後の[]の書き方でuseEffectの動きが変わる。
@@ -85,6 +87,43 @@ function App(){
     // 最新のメモリストに画面を更新
     fetchMemos();
   }
+  // メモを編集してデータを書き換える機能
+  async function updateMemo(){
+    // タイトルの中身が空なら処理を止める
+    if(title==="")return;
+    // supabaseと接続する。これが終わるまで先に進まない。supabaseからのエラー情報のみを受け取るerror箱を作る
+    const{error}=await supabase
+      // supabaseのmemosという場所の
+      .from('memos')
+      // 以下の指定のメモのデータを書き換える→タイトルと本文
+      .update({title:title,content:content})
+      // 編集中のメモのidと一致するidのデータを探す（上のupdateで書き換えられる）
+      .eq('id',editingId);
+      // もしもエラー情報がsupabaseから送られていたら、コンソールにエラーとエラー情報を表示して処理を止める
+      if(error){
+        console.log('エラー:',error);
+        return;
+      }
+      // 編集中のメモidをリセット（どのメモも編集状態でなくす）
+      setEditingId(null);
+      // タイトル入力欄を空欄にリセット
+      setTitle("");
+      // 本文入力欄を空欄にリセット
+      setContent("");
+      // 最新のメモリスト（データ）をsupabaseから取ってきて画面を更新
+      fetchMemos();
+
+  }
+  // 「memo=.mapでmemosを加工したもの。id,title,contentを持っている」
+  // 編集開始関数。memoの「id,title,content」を引数として受け取る
+  function startEdit(memo){
+    // 編集中のメモのidを記憶する。（EditingIDを編集中のメモのidに更新する）
+    setEditingId(memo.id);
+    // タイトルの入力欄へ編集するメモのタイトルを渡す。setTitle,HTMLのvalueのおかげで画面の更新、入力欄の表示タイトルの更新ができる。
+    setTitle(memo.title);
+    // 本文の入力欄へ編集するメモの本文を渡す。
+    setContent(memo.content);
+  }
   // 以下の画面の設計図をReactに返す
   return(
     <div>
@@ -110,8 +149,13 @@ function App(){
           // 入力欄に最初に入っている薄い文字・ユーザーへのヒント
           placeholder="本文"
           />
-          {/* 追加ボタン。クリックされるたび、addMemo関数が実行 */}
-          <button onClick={addMemo}>追加</button>
+          {/* 編集中メモのidがなければ（編集モードではなかったら）?へと進み追加ボタンが表示。編集中のメモがあれば（nullでない）:へ進み更新ボタンが表示 */}
+          {editingId===null
+            // 追加ボタン。クリックされるたび、addMemo関数が実行 。「?=trueの場合」
+            ?<button onClick={addMemo}>追加</button>
+            // 「:=falseの場合（編集中」更新ボタン。クリックされるとupdateMemo関数が実行。
+            :<button onClick={updateMemo}>更新</button>
+          }
       </div>
       {/* 順序なしリスト。<li>の親 */}
       <ul>
@@ -124,6 +168,8 @@ function App(){
             <p>{memo.content}</p>
             {/* 削除ボタンが押されると、クリックされたメモのidを引数に、deleteMemo関数が実行される。 */}
             <button onClick={()=>deleteMemo(memo.id)}>削除</button>
+            {/* 編集ボタン、クリックされたメモの情報（id,title,content）を引数にstartEdit関数が実行 */}
+            <button onClick={()=>startEdit(memo)}>編集</button>
           </li>
         ))}
       </ul>
