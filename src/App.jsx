@@ -132,7 +132,7 @@ function App(){
   return(
     <div>
       <h1>メモアプリ</h1>
-      <div>
+      <div className="form-area">
         {/* タイトル入力欄 */}
         <input 
         // 「value=入力欄に表示される文字」→titleの箱の中身を入力欄の中身と同期する
@@ -156,9 +156,9 @@ function App(){
           {/* 編集中メモのidがなければ（編集モードではなかったら）?へと進み追加ボタンが表示。編集中のメモがあれば（nullでない）:へ進み更新ボタンが表示 */}
           {editingId===null
             // 追加ボタン。クリックされるたび、addMemo関数が実行 。「?=trueの場合」
-            ?<button onClick={addMemo}>追加</button>
+            ?<button className="btn-primary" onClick={addMemo}>追加</button>
             // 「:=falseの場合（編集中」更新ボタン。クリックされるとupdateMemo関数が実行。
-            :<button onClick={updateMemo}>更新</button>
+            :<button className="btn-primary"onClick={updateMemo}>更新</button>
           }
       </div>
       {/* 順序なしリスト。<li>の親 */}
@@ -166,14 +166,14 @@ function App(){
         {/* memos(オブジェクト)の中からひとつずつ取り出して加工していく。memoというラベルをつけていく */}
         {memos.map((memo)=>(
           // 「key=Reactが各要素を識別する目印」。メモを番号で管理している。
-          <li key={memo.id}>
+          <li key={memo.id} className="memo-item">
             {/* 該当するデータのtitleとcontentを表示する */}
             <h3>{memo.title}</h3>
-            <p>{memo.content}</p>
+            <p className="memo-content">{memo.content}</p>
             {/* 削除ボタンが押されると、クリックされたメモのidを引数に、deleteMemo関数が実行される。 */}
-            <button onClick={()=>deleteMemo(memo.id)}>削除</button>
+            <button className="btn-danger" onClick={()=>deleteMemo(memo.id)}>削除</button>
             {/* 編集ボタン、クリックされたメモの情報（id,title,content）を引数にstartEdit関数が実行 */}
-            <button onClick={()=>startEdit(memo)}>編集</button>
+            <button className="btn-edit" onClick={()=>startEdit(memo)}>編集</button>
           </li>
         ))}
       </ul>
