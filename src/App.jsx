@@ -84,6 +84,10 @@ function App(){
       console.log('エラー:',error);
       return;
     }
+    // 編集中に削除ボタンを押された場合、入力欄をリセットする
+    setEditingId(null);
+    setTitle("");
+    setContent("");
     // 最新のメモリストに画面を更新
     fetchMemos();
   }
